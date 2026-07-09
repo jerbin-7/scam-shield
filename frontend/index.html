@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScamShield — AI-Powered Threat Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --bg2: #090e1a;
+    --bg3: #0d1525;
+    --panel: #111827;
+    --border: #1e2d45;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --danger: #ef4444;
+    --safe: #22c55e;
+    --warn: #f59e0b;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --glow: 0 0 20px rgba(0,229,255,0.15);
+    --glow2: 0 0 40px rgba(124,58,237,0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5, 8, 16, 0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--sans);
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .logo svg { width: 28px; height: 28px; }
+
+  .header-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 5rem 2rem 3rem;
+  }
+
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hero-label::before, .hero-label::after {
+    content: '';
+    width: 32px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text2);
+    max-width: 560px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    font-weight: 400;
+  }
+
+  /* API Status */
+  .api-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text3);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 8px;
+    margin-bottom: 3rem;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+  }
+
+  .status-dot.online { background: var(--safe); box-shadow: 0 0 8px var(--safe); animation: pulse 2s infinite; }
+  .status-dot.offline { background: var(--danger); }
+  .status-dot.checking { background: var(--warn); animation: blink 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Tab Navigation */
+  .nav-container {
+    position: relative;
+    z-index: 1;
+    padding: 0 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex: 1;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .tab-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    background: var(--bg3);
+    color: var(--text);
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,237,0.15));
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.2);
+  }
+
+  .tab-btn.active svg { filter: drop-shadow(0 0 4px var(--accent)); }
+
+  /* Main Content */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Detector Card */
+  .detector-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.03), rgba(124,58,237,0.03));
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,237,0.15));
+    border: 1px solid rgba(0,229,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-icon svg { width: 22px; height: 22px; color: var(--accent); }
+
+  .card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .card-subtitle {
+    font-size: 0.78rem;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  .card-body {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 700px) {
+    .card-body { grid-template-columns: 1fr; }
+  }
+
+  .form-section { display: flex; flex-direction: column; gap: 1rem; }
+
+  .field-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+    font-family: var(--mono);
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical;
+  }
+
+  .text-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  textarea.text-input { min-height: 100px; }
+
+  /* File drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg2);
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.03);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1rem;
+    color: var(--text3);
+  }
+
+  .drop-text {
+    font-size: 0.9rem;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .drop-hint {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+  }
+
+  .file-selected {
+    margin-top: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: rgba(0,229,255,0.08);
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* Detect button */
+  .detect-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .detect-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+
+  .detect-btn:hover::after { background: rgba(255,255,255,0.08); }
+  .detect-btn:active { transform: scale(0.98); }
+  .detect-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    padding: 12px 0;
+  }
+
+  .loading.show { display: flex; }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,229,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Results section */
+  .result-section {
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .result-section.show { display: flex; }
+
+  /* Verdict */
+  .verdict {
+    border-radius: 14px;
+    padding: 1.5rem;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .verdict::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    border-radius: 14px;
+  }
+
+  .verdict.safe {
+    border-color: var(--safe);
+    background: rgba(34, 197, 94, 0.08);
+  }
+
+  .verdict.safe::before { background: var(--safe); }
+
+  .verdict.danger {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.08);
+  }
+
+  .verdict.danger::before { background: var(--danger); }
+
+  .verdict.warn {
+    border-color: var(--warn);
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  .verdict.warn::before { background: var(--warn); }
+
+  .verdict-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .verdict-icon {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .verdict-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .verdict.safe .verdict-label { color: var(--safe); }
+  .verdict.danger .verdict-label { color: var(--danger); }
+  .verdict.warn .verdict-label { color: var(--warn); }
+
+  .verdict-conf {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+
+  /* Confidence bar */
+  .conf-bar-wrap {
+    margin-top: 0.75rem;
+  }
+
+  .conf-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+
+  .conf-bar {
+    height: 6px;
+    background: var(--bg2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .conf-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .conf-bar-fill.danger-fill { background: linear-gradient(90deg, #f59e0b, var(--danger)); }
+
+  /* Risk factors / indicators */
+  .factors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 1rem;
+  }
+
+  .factor-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text2);
+    background: var(--bg2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 2px solid var(--danger);
+  }
+
+  .factor-item::before {
+    content: '⚠';
+    color: var(--danger);
+    font-size: 0.75rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  /* Analysis grid */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .analysis-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .analysis-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .analysis-value {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .analysis-value.good { color: var(--safe); }
+  .analysis-value.bad { color: var(--danger); }
+  .analysis-value.warn { color: var(--warn); }
+
+  /* Stats strip */
+  .stats-strip {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .stat-cell {
+    flex: 1;
+    padding: 1rem;
+    background: var(--panel);
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: var(--mono);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 0.68rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Info section */
+  .info-card {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.12);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    font-size: 0.8rem;
+    color: var(--text2);
+    line-height: 1.6;
+    font-family: var(--mono);
+  }
+
+  .info-card strong { color: var(--accent); }
+
+  /* Error state */
+  .error-msg {
+    display: none;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--danger);
+    margin-top: 0.5rem;
+  }
+
+  .error-msg.show { display: block; }
+
+  /* QR results list */
+  .qr-results { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .qr-result-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+  }
+
+  .qr-url { word-break: break-all; color: var(--text2); margin-bottom: 6px; }
+
+  /* Voice waveform viz */
+  .waveform-display {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .wave-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0.6;
+    animation: wave 0.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes wave {
+    from { transform: scaleY(0.3); }
+    to { transform: scaleY(1); }
+  }
+
+  /* Footer */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* Scroll to top */
+  .page-content {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero { padding: 3rem 1.5rem 2rem; }
+    header { padding: 0 1rem; }
+    main { padding: 1.5rem 1rem; }
+    .nav-container { padding: 0 1rem; }
+    .stats-strip { flex-wrap: wrap; }
+    .card-body { padding: 1.25rem; gap: 1rem; }
+  }
+
+  /* Tag badge for model info */
+  .model-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--accent2);
+    background: rgba(124,58,237,0.1);
+    border: 1px solid rgba(124,58,237,0.25);
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  .section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--mono);
+    margin-bottom: 8px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="page-content">
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 3L4 8v8c0 7.18 5.12 13.89 12 15.5C23.88 29.89 29 23.18 29 16V8L16 3z" stroke="currentColor" stroke-width="1.5" fill="rgba(0,229,255,0.08)"/>
+      <path d="M11 16l3.5 3.5L21 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    ScamShield
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="api-status" id="apiStatus">
+      <div class="status-dot checking" id="statusDot"></div>
+      <span id="statusText">checking api...</span>
+    </div>
+    <div class="header-badge">v1.0 · ML</div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-label">AI-Powered Security Suite</div>
+  <h1>Detect Scams<br><span>Before They Strike</span></h1>
+  <p>Five specialized ML models working together to identify phishing URLs, emails, fake login pages, malicious QR codes, and deepfake voice threats.</p>
+
+  <div class="stats-strip" style="max-width:600px;margin:0 auto 2rem;">
+    <div class="stat-cell">
+      <div class="stat-num">5</div>
+      <div class="stat-label">ML Models</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">50+</div>
+      <div class="stat-label">Features</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">RT</div>
+      <div class="stat-label">Real-time</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Local ML</div>
+    </div>
+  </div>
+</section>
+
+<!-- Tab Navigation -->
+<div class="nav-container">
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" onclick="switchTab('url')" id="tab-url">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+      URL Detector
+    </button>
+    <button class="tab-btn" onclick="switchTab('email')" id="tab-email">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </svg>
+      Email Phishing
+    </button>
+    <button class="tab-btn" onclick="switchTab('login')" id="tab-login">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+      </svg>
+      Login Page
+    </button>
+    <button class="tab-btn" onclick="switchTab('qr')" id="tab-qr">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/>
+        <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/>
+      </svg>
+      QR Code
+    </button>
+    <button class="tab-btn" onclick="switchTab('voice')" id="tab-voice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      Voice Deepfake
+    </button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<main>
+
+  <!-- ═══ URL DETECTOR ═══ -->
+  <div class="panel active" id="panel-url">
+    <div class="detector-card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+        </div>
+        <div>
+          <div class="card-title">Fake URL Detector <span class="model-tag">GradientBoosting</span></div>
+          <div class="card-subtitle">30+ lexical & host-based features extracted per URL</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div>
+            <div class="field-label">Suspicious URL</div>
+            <input class="text-input" id="urlInput" type="text" 
+              placeholder="https://paypa1-login.tk/verify" 
+              onkeydown="if(event.key==='Enter')detectURL()">
+          </div>
+          <div class="info-card">
+            <strong>Model:</strong> Gradient Boosting Classifier<br>
+            Analyzes URL entropy, subdomain depth, TLD risk, brand impersonation, shortener usage, IP-based addresses, and 24+ more signals.
+          </div>
+          <button class="detect-btn" onclick="detectURL()">⚡ Analyze URL</button>
+          <div class="loading" id="urlLoading">
+            <div class="spinner"></div> Extracting features &amp; classifying...
+          </div>
+          <div class="error-msg" id="urlError"></div>
+        </div>
+        <div class="form-section">
+          <div class="result-section" id="urlResult">
+            <div id="urlVerdict" class="verdict"></div>
+            <div id="urlFactors"></div>
+            <div id="urlAnalysis"></div>
+          </div>
+          <div id="urlPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);font-family:var(--mono);font-size:0.75rem;text-align:center;flex-direction:column;gap:8px;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Enter a URL to analyze
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EMAIL DETECTOR ═══ -->
+  <div class="panel" id="panel-email">
+    <div class="detector-card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="card-title">Email Phishing Detector <span class="model-tag">TF-IDF + GBM</span></div>
+          <div class="card-subtitle">NLP features + gradient boosting on 20 behavioral signals</div>
+        </div>
+      </div>
+      <div class="card-body" style="grid-template-columns:1fr;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+          <div class="form-section">
+            <div>
+              <div class="field-label">Sender Email</div>
+              <input class="text-input" id="emailSender" type="text" placeholder="security@paypa1-alert.tk">
+            </div>
+            <div>
+              <div class="field-label">Subject Line</div>
+              <input class="text-input" id="emailSubject" type="text" placeholder="URGENT: Your account will be suspended!">
+            </div>
+            <div>
+              <div class="field-label">Email Body</div>
+              <textarea class="text-input" id="emailBody" rows="5" placeholder="Dear Customer, we detected unusual activity on your account. Click here immediately to verify your identity or your account will be permanently deleted within 24 hours..."></textarea>
+            </div>
+            <button class="detect-btn" onclick="detectEmail()">⚡ Analyze Email</button>
+            <div class="loading" id="emailLoading"><div class="spinner"></div> Running NLP analysis...</div>
+            <div class="error-msg" id="emailError"></div>
+          </div>
+          <div class="form-section">
+            <div class="result-section" id="emailResult">
+              <div id="emailVerdict" class="verdict"></div>
+              <div id="emailFactors"></div>
+              <div id="emailAnalysis"></div>
+            </div>
+            <div id="emailPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);font-family:var(--mono);font-size:0.75rem;text-align:center;flex-direction:column;gap:8px;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              Fill in email details to analyze
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOGIN PAGE DETECTOR ═══ -->
+  <div class="panel" id="panel-login">
+    <div class="detector-card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="card-title">Login Page Detector <span class="model-tag">RandomForest + CV</span></div>
+          <div class="card-subtitle">Computer vision extracts 26 visual features from screenshots</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="drop-zone" id="loginDropZone" onclick="document.getElementById('loginFile').click()">
+            <input type="file" id="loginFile" accept="image/*" onchange="handleLoginFile(this)">
+            <div class="drop-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="8" width="40" height="28" rx="3"/>
+                <path d="M16 40h16M24 36v4"/>
+                <path d="M14 22l6 6 14-12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="drop-text">Drop screenshot or click to upload</div>
+            <div class="drop-hint">PNG, JPG, WebP · Max 10MB</div>
+            <div class="file-selected" id="loginFileName" style="display:none;"></div>
+          </div>
+          <div id="loginPreview" style="display:none;">
+            <img id="loginPreviewImg" style="width:100%;border-radius:10px;border:1px solid var(--border);max-height:200px;object-fit:contain;" alt="Preview">
+          </div>
+          <div class="info-card">
+            <strong>Analyzes:</strong> symmetry, white-space ratio, color palette variance, edge density, contrast levels, and structural layout patterns typical of phishing pages.
+          </div>
+          <button class="detect-btn" onclick="detectLogin()">⚡ Analyze Screenshot</button>
+          <div class="loading" id="loginLoading"><div class="spinner"></div> Running visual analysis...</div>
+          <div class="error-msg" id="loginError"></div>
+        </div>
+        <div class="form-section">
+          <div class="result-section" id="loginResult">
+            <div id="loginVerdict" class="verdict"></div>
+            <div id="loginIndicators"></div>
+            <div id="loginAnalysis"></div>
+          </div>
+          <div id="loginPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);font-family:var(--mono);font-size:0.75rem;text-align:center;flex-direction:column;gap:8px;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8M12 17v4"/>
+            </svg>
+            Upload a login page screenshot
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ QR CODE DETECTOR ═══ -->
+  <div class="panel" id="panel-qr">
+    <div class="detector-card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+            <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/>
+          </svg>
+        </div>
+        <div>
+          <div class="card-title">QR Code Phishing Detector <span class="model-tag">GBM + pyzbar</span></div>
+          <div class="card-subtitle">Decodes QR content then runs URL phishing analysis</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="drop-zone" id="qrDropZone" onclick="document.getElementById('qrFile').click()">
+            <input type="file" id="qrFile" accept="image/*" onchange="handleQRFile(this)">
+            <div class="drop-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <rect x="28" y="4" width="16" height="16" rx="2"/>
+                <rect x="4" y="28" width="16" height="16" rx="2"/>
+                <rect x="28" y="28" width="6" height="6"/>
+                <rect x="38" y="28" width="6" height="6"/>
+                <rect x="28" y="38" width="6" height="6"/>
+              </svg>
+            </div>
+            <div class="drop-text">Upload QR code image</div>
+            <div class="drop-hint">PNG, JPG, WebP · QR will be decoded + analyzed</div>
+            <div class="file-selected" id="qrFileName" style="display:none;"></div>
+          </div>
+          <div id="qrPreview" style="display:none;">
+            <img id="qrPreviewImg" style="max-width:200px;margin:0 auto;display:block;border-radius:10px;border:1px solid var(--border);" alt="QR Preview">
+          </div>
+          <div class="info-card">
+            <strong>Process:</strong> Decode QR → extract embedded URL → run 20-feature phishing analysis including TLD risk, brand impersonation, shortener detection, and URL structure analysis.
+          </div>
+          <button class="detect-btn" onclick="detectQR()">⚡ Scan & Analyze QR</button>
+          <div class="loading" id="qrLoading"><div class="spinner"></div> Decoding QR and analyzing...</div>
+          <div class="error-msg" id="qrError"></div>
+        </div>
+        <div class="form-section">
+          <div class="result-section" id="qrResult">
+            <div id="qrVerdict" class="verdict"></div>
+            <div id="qrContent"></div>
+            <div id="qrFactors"></div>
+          </div>
+          <div id="qrPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);font-family:var(--mono);font-size:0.75rem;text-align:center;flex-direction:column;gap:8px;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Upload a QR code to scan
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VOICE DEEPFAKE ═══ -->
+  <div class="panel" id="panel-voice">
+    <div class="detector-card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="card-title">Deepfake Voice Detector <span class="model-tag">GBM + MFCC</span></div>
+          <div class="card-subtitle">50 audio features: MFCC, F0, HNR, spectral, prosodic analysis</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="drop-zone" id="voiceDropZone" onclick="document.getElementById('voiceFile').click()">
+            <input type="file" id="voiceFile" accept="audio/*" onchange="handleVoiceFile(this)">
+            <div class="drop-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M24 6a6 6 0 0 0-6 6v12a6 6 0 0 0 12 0V12a6 6 0 0 0-6-6z"/>
+                <path d="M36 22v2a12 12 0 0 1-24 0v-2M24 36v6M18 42h12"/>
+              </svg>
+            </div>
+            <div class="drop-text">Upload voice audio file</div>
+            <div class="drop-hint">WAV, MP3, FLAC, OGG · Max 50MB</div>
+            <div class="file-selected" id="voiceFileName" style="display:none;"></div>
+          </div>
+          <div id="waveformDisplay" style="display:none;" class="waveform-display" id="waveformViz">
+          </div>
+          <div class="info-card">
+            <strong>Detects:</strong> Unnatural pitch smoothness, missing breath sounds, codec artifacts, abnormal MFCC variance, suspicious harmonic-to-noise ratios typical of TTS/voice-cloning systems.
+          </div>
+          <button class="detect-btn" onclick="detectVoice()">⚡ Analyze Audio</button>
+          <div class="loading" id="voiceLoading"><div class="spinner"></div> Extracting audio features...</div>
+          <div class="error-msg" id="voiceError"></div>
+        </div>
+        <div class="form-section">
+          <div class="result-section" id="voiceResult">
+            <div id="voiceVerdict" class="verdict"></div>
+            <div id="voiceIndicators"></div>
+            <div id="voiceAnalysis"></div>
+          </div>
+          <div id="voicePlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);font-family:var(--mono);font-size:0.75rem;text-align:center;flex-direction:column;gap:8px;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+            </svg>
+            Upload a voice recording to analyze
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  ScamShield · ML models trained with Gradient Boosting, Random Forest & SVM ·
+  <a href="http://localhost:8000/docs" target="_blank">API Docs</a> ·
+  All processing is local — no data sent to external servers
+</footer>
+
+</div>
+
+<script>
+const API_BASE = 'http://localhost:8000';
+
+// ─── API Status Check ─────────────────────────────────────────────────────────
+async function checkAPIStatus() {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  try {
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      dot.className = 'status-dot online';
+      text.textContent = 'api connected';
+    } else {
+      throw new Error('not ok');
+    }
+  } catch {
+    dot.className = 'status-dot offline';
+    text.textContent = 'api offline — start backend';
+  }
+}
+checkAPIStatus();
+setInterval(checkAPIStatus, 15000);
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  document.getElementById(`panel-${name}`).classList.add('active');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setLoading(id, show) {
+  const el = document.getElementById(id + 'Loading');
+  if (el) el.classList.toggle('show', show);
+}
+
+function setError(id, msg) {
+  const el = document.getElementById(id + 'Error');
+  if (!el) return;
+  if (msg) { el.textContent = msg; el.classList.add('show'); }
+  else { el.textContent = ''; el.classList.remove('show'); }
+}
+
+function showResult(id) {
+  const r = document.getElementById(id + 'Result');
+  const p = document.getElementById(id + 'Placeholder');
+  if (r) r.classList.add('show');
+  if (p) p.style.display = 'none';
+}
+
+function verdictHTML(isPhishing, confidence, phishingProb, labelOverride) {
+  const cls = isPhishing ? 'danger' : (phishingProb > 30 ? 'warn' : 'safe');
+  const icon = isPhishing ? '🚨' : (phishingProb > 30 ? '⚠️' : '✅');
+  const label = labelOverride || (isPhishing ? 'PHISHING DETECTED' : (phishingProb > 30 ? 'SUSPICIOUS' : 'LIKELY SAFE'));
+  const barPct = phishingProb.toFixed(1);
+  return `
+    <div class="verdict ${cls}">
+      <div class="verdict-header">
+        <div class="verdict-icon">${icon}</div>
+        <div>
+          <div class="verdict-label">${label}</div>
+          <div class="verdict-conf">Model confidence: ${confidence}% · Threat score: ${barPct}%</div>
+        </div>
+      </div>
+      <div class="conf-bar-wrap">
+        <div class="conf-bar-label">
+          <span>Safe</span>
+          <span>Threat Level: ${barPct}%</span>
+          <span>Malicious</span>
+        </div>
+        <div class="conf-bar">
+          <div class="conf-bar-fill ${isPhishing ? 'danger-fill' : ''}" style="width:${barPct}%"></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function factorsHTML(factors, title='Risk Factors Detected') {
+  if (!factors || factors.length === 0) return '';
+  return `
+    <div>
+      <div class="section-title">${title}</div>
+      <div class="factors-list">
+        ${factors.map(f => `<div class="factor-item">${f}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function analysisGridHTML(items) {
+  if (!items || Object.keys(items).length === 0) return '';
+  return `
+    <div>
+      <div class="section-title">Feature Analysis</div>
+      <div class="analysis-grid">
+        ${Object.entries(items).map(([k, v]) => {
+          const label = k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          const val = typeof v === 'boolean' ? (v ? 'Yes' : 'No') :
+                      typeof v === 'number' ? v : String(v);
+          const cls = (typeof v === 'boolean' && v) ? 'bad' :
+                      (typeof v === 'boolean' && !v) ? 'good' : '';
+          return `<div class="analysis-item">
+            <div class="analysis-label">${label}</div>
+            <div class="analysis-value ${cls}">${val ?? 'N/A'}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// ─── URL Detection ────────────────────────────────────────────────────────────
+async function detectURL() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { setError('url', 'Please enter a URL to analyze'); return; }
+  
+  setError('url', null);
+  setLoading('url', true);
+  document.querySelector('[onclick="detectURL()"]').disabled = true;
+  
+  try {
+    const res = await fetch(`${API_BASE}/detect/url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'API error');
+    }
+    
+    const data = await res.json();
+    const r = data.result;
+    
+    document.getElementById('urlVerdict').outerHTML = verdictHTML(r.is_phishing, r.confidence, r.phishing_probability);
+    document.getElementById('urlFactors').innerHTML = factorsHTML(r.risk_factors);
+    document.getElementById('urlAnalysis').innerHTML = analysisGridHTML(r.features);
+    showResult('url');
+  } catch(e) {
+    setError('url', `Error: ${e.message}. Make sure the backend is running at ${API_BASE}`);
+  } finally {
+    setLoading('url', false);
+    document.querySelector('[onclick="detectURL()"]').disabled = false;
+  }
+}
+
+// ─── Email Detection ──────────────────────────────────────────────────────────
+async function detectEmail() {
+  const subject = document.getElementById('emailSubject').value.trim();
+  const body = document.getElementById('emailBody').value.trim();
+  const sender = document.getElementById('emailSender').value.trim();
+  
+  if (!subject && !body) { setError('email', 'Please enter email subject or body'); return; }
+  
+  setError('email', null);
+  setLoading('email', true);
+  document.querySelector('[onclick="detectEmail()"]').disabled = true;
+  
+  try {
+    const res = await fetch(`${API_BASE}/detect/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, body, sender })
+    });
+    
+    if (!res.ok) throw new Error((await res.json()).detail || 'API error');
+    
+    const data = await res.json();
+    const r = data.result;
+    
+    document.getElementById('emailVerdict').outerHTML = verdictHTML(r.is_phishing, r.confidence, r.phishing_probability);
+    document.getElementById('emailFactors').innerHTML = factorsHTML(r.red_flags, 'Red Flags Detected');
+    document.getElementById('emailAnalysis').innerHTML = analysisGridHTML(r.analysis);
+    showResult('email');
+  } catch(e) {
+    setError('email', `Error: ${e.message}`);
+  } finally {
+    setLoading('email', false);
+    document.querySelector('[onclick="detectEmail()"]').disabled = false;
+  }
+}
+
+// ─── Login Page Detection ─────────────────────────────────────────────────────
+let loginFileData = null;
+
+function handleLoginFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  loginFileData = file;
+  document.getElementById('loginFileName').textContent = `📎 ${file.name}`;
+  document.getElementById('loginFileName').style.display = 'inline-block';
+  
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('loginPreviewImg').src = e.target.result;
+    document.getElementById('loginPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function detectLogin() {
+  if (!loginFileData) { setError('login', 'Please upload a screenshot first'); return; }
+  
+  setError('login', null);
+  setLoading('login', true);
+  document.querySelector('[onclick="detectLogin()"]').disabled = true;
+  
+  try {
+    const fd = new FormData();
+    fd.append('file', loginFileData);
+    
+    const res = await fetch(`${API_BASE}/detect/login-page`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail || 'API error');
+    
+    const data = await res.json();
+    const r = data.result;
+    
+    document.getElementById('loginVerdict').outerHTML = verdictHTML(r.is_phishing, r.confidence, r.phishing_probability);
+    document.getElementById('loginIndicators').innerHTML = factorsHTML(r.visual_indicators, 'Visual Anomalies Detected');
+    document.getElementById('loginAnalysis').innerHTML = analysisGridHTML(r.visual_analysis);
+    showResult('login');
+  } catch(e) {
+    setError('login', `Error: ${e.message}`);
+  } finally {
+    setLoading('login', false);
+    document.querySelector('[onclick="detectLogin()"]').disabled = false;
+  }
+}
+
+// ─── QR Code Detection ────────────────────────────────────────────────────────
+let qrFileData = null;
+
+function handleQRFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  qrFileData = file;
+  document.getElementById('qrFileName').textContent = `📎 ${file.name}`;
+  document.getElementById('qrFileName').style.display = 'inline-block';
+  
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('qrPreviewImg').src = e.target.result;
+    document.getElementById('qrPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function detectQR() {
+  if (!qrFileData) { setError('qr', 'Please upload a QR code image first'); return; }
+  
+  setError('qr', null);
+  setLoading('qr', true);
+  document.querySelector('[onclick="detectQR()"]').disabled = true;
+  
+  try {
+    const fd = new FormData();
+    fd.append('file', qrFileData);
+    
+    const res = await fetch(`${API_BASE}/detect/qr-code`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail || 'API error');
+    
+    const data = await res.json();
+    const r = data.result;
+    
+    if (!r.qr_found) {
+      document.getElementById('qrVerdict').innerHTML = `<div class="verdict warn"><div class="verdict-header"><div class="verdict-icon">🔍</div><div><div class="verdict-label">No QR Code Found</div><div class="verdict-conf">${r.message}</div></div></div></div>`;
+      document.getElementById('qrContent').innerHTML = '';
+      document.getElementById('qrFactors').innerHTML = '';
+    } else {
+      const mainResult = r.results?.[0] || {};
+      const isPhishing = r.is_phishing;
+      const prob = r.phishing_probability || 0;
+      const conf = r.confidence || 0;
+      
+      document.getElementById('qrVerdict').outerHTML = verdictHTML(isPhishing, conf, prob);
+      
+      let contentHtml = `<div class="section-title">Decoded QR Content (${r.codes_found} code${r.codes_found !== 1 ? 's' : ''})</div>`;
+      contentHtml += `<div class="qr-results">`;
+      (r.results || []).forEach(item => {
+        contentHtml += `<div class="qr-result-item">
+          <div class="qr-url">${item.qr_content}</div>
+          <span style="font-size:0.65rem;color:var(--text3);">Type: ${item.content_type || 'unknown'}</span>
+        </div>`;
+      });
+      contentHtml += `</div>`;
+      document.getElementById('qrContent').innerHTML = contentHtml;
+      document.getElementById('qrFactors').innerHTML = factorsHTML(mainResult.risk_factors || []);
+    }
+    showResult('qr');
+  } catch(e) {
+    setError('qr', `Error: ${e.message}`);
+  } finally {
+    setLoading('qr', false);
+    document.querySelector('[onclick="detectQR()"]').disabled = false;
+  }
+}
+
+// ─── Voice Deepfake Detection ─────────────────────────────────────────────────
+let voiceFileData = null;
+
+function handleVoiceFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  voiceFileData = file;
+  document.getElementById('voiceFileName').textContent = `🎙 ${file.name}`;
+  document.getElementById('voiceFileName').style.display = 'inline-block';
+  
+  // Show waveform animation
+  const waveDiv = document.getElementById('waveformDisplay');
+  waveDiv.innerHTML = '';
+  waveDiv.style.display = 'flex';
+  for (let i = 0; i < 40; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    const h = 10 + Math.random() * 40;
+    bar.style.height = h + 'px';
+    bar.style.animationDelay = (i * 0.05) + 's';
+    bar.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+    waveDiv.appendChild(bar);
+  }
+}
+
+async function detectVoice() {
+  if (!voiceFileData) { setError('voice', 'Please upload an audio file first'); return; }
+  
+  setError('voice', null);
+  setLoading('voice', true);
+  document.querySelector('[onclick="detectVoice()"]').disabled = true;
+  
+  try {
+    const fd = new FormData();
+    fd.append('file', voiceFileData);
+    
+    const res = await fetch(`${API_BASE}/detect/voice`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail || 'API error');
+    
+    const data = await res.json();
+    const r = data.result;
+    
+    if (r.error) {
+      setError('voice', r.error + ' — ' + (r.message || ''));
+    } else {
+      const isDeepfake = r.is_deepfake;
+      const prob = r.deepfake_probability || 0;
+      const conf = r.confidence || 0;
+      const label = isDeepfake ? 'DEEPFAKE DETECTED' : (prob > 30 ? 'SUSPICIOUS AUDIO' : 'LIKELY AUTHENTIC');
+      
+      document.getElementById('voiceVerdict').outerHTML = verdictHTML(isDeepfake, conf, prob, label);
+      document.getElementById('voiceIndicators').innerHTML = factorsHTML(r.indicators || [], 'Deepfake Indicators');
+      
+      const analysis = r.audio_analysis || {};
+      const displayAnalysis = {};
+      if (analysis.pitch_stability !== null && analysis.pitch_stability !== undefined) 
+        displayAnalysis['pitch_stability'] = analysis.pitch_stability;
+      if (analysis.harmonic_noise_ratio !== undefined) 
+        displayAnalysis['hnr_db'] = analysis.harmonic_noise_ratio;
+      if (analysis.voiced_ratio !== undefined) 
+        displayAnalysis['voiced_%'] = analysis.voiced_ratio;
+      if (analysis.silence_ratio !== undefined) 
+        displayAnalysis['silence_%'] = analysis.silence_ratio;
+      if (analysis.mfcc_variance !== undefined) 
+        displayAnalysis['mfcc_variance'] = analysis.mfcc_variance;
+      if (analysis.duration_seconds !== undefined) 
+        displayAnalysis['duration_s'] = analysis.duration_seconds;
+      
+      document.getElementById('voiceAnalysis').innerHTML = analysisGridHTML(displayAnalysis);
+      if (!r.librosa_available) {
+        document.getElementById('voiceAnalysis').innerHTML += `<div class="info-card" style="margin-top:8px;"><strong>Note:</strong> Install librosa for full audio feature extraction (pip install librosa). Currently using basic features.</div>`;
+      }
+      showResult('voice');
+    }
+  } catch(e) {
+    setError('voice', `Error: ${e.message}`);
+  } finally {
+    setLoading('voice', false);
+    document.querySelector('[onclick="detectVoice()"]').disabled = false;
+  }
+}
+
+// ─── Drag and Drop ────────────────────────────────────────────────────────────
+['loginDropZone', 'qrDropZone', 'voiceDropZone'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const input = el.querySelector('input[type=file]');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+});
+
+// Fix for innerHTML replacing verdict elements
+// Monkey-patch verdictHTML to return a proper structure
+function updateVerdict(id, html) {
+  const container = document.getElementById(id + 'Verdict');
+  if (container) container.outerHTML = html;
+}
+
+// Re-route verdict updates through proper element references
+const _origDetectURL = detectURL;
+</script>
+</body>
+</html>

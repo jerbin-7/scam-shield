@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: scam-shield
+    env: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
